@@ -1,13 +1,3 @@
----
-title: "go的数组与切片"
-slug: "go-array-slice"
-date: "2018-11-23 01:00:01"
-categories:
-    - go
-tags:
-    - go
----
-
 ## 数据与切片
 
 声明一个数组和一个切片是不同的。
@@ -410,8 +400,133 @@ for i, v := range mySlice {
 
 使用`range`让代码更加简洁，所以在go编程中也更加常用。
 
-# 
+## slice的创建汇总
+创建 slice 的方式有以下几种：
 
+| 序号 | 方式               | 代码示例                                             |
+| ---- | ------------------ | ---------------------------------------------------- |
+| 1    | 直接声明           | `var slice []int`                                    |
+| 2    | new                | `slice := *new([]int)`                               |
+| 3    | 字面量             | `slice := []int{1,2,3,4,5}`                          |
+| 4    | make               | `slice := make([]int, 5, 10)`                        |
+| 5    | 从切片或数组“截取” | `slice := array[1:5]` 或 `slice := sourceSlice[1:5]` |
+
+## 直接声明
+
+第一种创建出来的 slice 其实是一个 `nil slice`。它的长度和容量都为0。和`nil`比较的结果为`true`。
+
+这里比较混淆的是`empty slice`，它的长度和容量也都为0，但是所有的空切片的数据指针都指向同一个地址 `0xc42003bda0`。空切片和 `nil` 比较的结果为`false`。
+
+它们的内部结构如下图：
+
+![](images/slice05.png)
+
+| 创建方式      | nil切片              | 空切片                  |
+| ------------- | -------------------- | ----------------------- |
+| 方式一        | var s1 []int         | var s2 = []int{}        |
+| 方式二        | var s4 = *new([]int) | var s3 = make([]int, 0) |
+| 长度          | 0                    | 0                       |
+| 容量          | 0                    | 0                       |
+| 和 `nil` 比较 | `true`               | `false`                 |
+
+`nil` 切片和空切片很相似，长度和容量都是0，官方建议尽量使用 `nil` 切片。
+
+关于`nil slice`和`empty slice`的探索可以参考公众号“码洞”作者老钱写的一篇文章《深度解析 Go 语言中「切片」的三种特殊状态》，地址附在了参考资料部分。
+
+# 为什么 nil slice 可以直接 append
+
+其实 `nil slice` 或者 `empty slice` 都是可以通过调用 append 函数来获得底层数组的扩容。最终都是调用 `mallocgc` 来向 Go 的内存管理器申请到一块内存，然后再赋给原来的`nil slice` 或 `empty slice`，然后摇身一变，成为“真正”的 `slice` 了。
+
+# 传 slice 和 slice 指针有什么区别
+
+前面我们说到，slice 其实是一个结构体，包含了三个成员：len, cap, array。分别表示切片长度，容量，底层数据的地址。
+
+当 slice 作为函数参数时，就是一个普通的结构体。其实很好理解：若直接传 slice，在调用者看来，实参 slice 并不会被函数中的操作改变；若传的是 slice 的指针，在调用者看来，是会被改变原 slice 的。
+
+值的注意的是，不管传的是 slice 还是 slice 指针，如果改变了 slice 底层数组的数据，会反应到实参 slice 的底层数据。为什么能改变底层数组的数据？很好理解：底层数据在 slice 结构体里是一个指针，仅管 slice 结构体自身不会被改变，也就是说底层数据地址不会被改变。 但是通过指向底层数据的指针，可以改变切片的底层数据，没有问题。
+
+通过 slice 的 array 字段就可以拿到数组的地址。在代码里，是直接通过类似 `s[i]=10` 这种操作改变 slice 底层数组元素值。
+
+另外，啰嗦一句，Go 语言的函数参数传递，只有值传递，没有引用传递。后面会再写一篇相关的文章，敬请期待。
+
+再来看一个年幼无知的代码片段：
+
+```go
+package main
+
+func main() {
+    s := []int{1, 1, 1}
+    f(s)
+    fmt.Println(s)
+}
+
+func f(s []int) {
+    // i只是一个副本，不能改变s中元素的值
+    /*for _, i := range s {
+        i++
+    }
+    */
+
+    for i := range s {
+        s[i] += 1
+    }
+}
+```
+
+运行一下，程序输出：
+
+```bash
+[2 2 2]
+```
+
+果真改变了原始 slice 的底层数据。这里传递的是一个 slice 的副本，在 `f` 函数中，`s` 只是 `main` 函数中 `s` 的一个拷贝。在`f` 函数内部，对 `s` 的作用并不会改变外层 `main` 函数的 `s`。
+
+要想真的改变外层 `slice`，只有将返回的新的 slice 赋值到原始 slice，或者向函数传递一个指向 slice 的指针。我们再来看一个例子：
+
+```go
+package main
+
+import "fmt"
+
+func myAppend(s []int) []int {
+    // 这里 s 虽然改变了，但并不会影响外层函数的 s
+    s = append(s, 100)
+    return s
+}
+
+func myAppendPtr(s *[]int) {
+    // 会改变外层 s 本身
+    *s = append(*s, 100)
+    return
+}
+
+func main() {
+    s := []int{1, 1, 1}
+    newS := myAppend(s)
+
+    fmt.Println(s)
+    fmt.Println(newS)
+
+    s = newS
+
+    myAppendPtr(&s)
+    fmt.Println(s)
+}
+```
+
+运行结果：
+
+```bash
+[1 1 1]
+[1 1 1 100]
+[1 1 1 100 100]
+```
+
+`myAppend` 函数里，虽然改变了 `s`，但它只是一个值传递，并不会影响外层的 `s`，因此第一行打印出来的结果仍然是 `[1 1 1]`。
+
+而 `newS` 是一个新的 `slice`，它是基于 `s` 得到的。因此它打印的是追加了一个 `100` 之后的结果： `[1 1 1 100]`。
+
+最后，将 `newS` 赋值给了 `s`，`s` 这时才真正变成了一个新的slice。之后，再给 `myAppendPtr` 函数传入一个 `s 指针`，这回它真的被改变了：`[1 1 1 100 100]`。
 
 ## 参考文献
 
@@ -421,4 +536,5 @@ for i, v := range mySlice {
 - [go array](https://golang.org/doc/effective_go.html#arrays)
 - [slices](https://gobyexample.com/slices)
 - [array and slice](https://golang.org/doc/effective_go.html#arrays)
+- [go的slice基本功](https://www.cnblogs.com/qcrao-2018/p/10631989.html)
 
