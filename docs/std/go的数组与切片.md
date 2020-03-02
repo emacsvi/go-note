@@ -148,11 +148,11 @@ s := x[:] // a slice referencing the storage of x
 ### 切片的内幕
 一个切片是一个数组片段的描述。它包含了指向**数组的指针**，**片段的长度**， 和**容量(片段的最大长度)**。
 
-![slice01](/images/slice01.png)
+![slice01](images/slice01.png)
 
 前面使用`make([]byte, 5)`创建的切片变量`s`的结构如下：
 
-![slice02](/images/slice02.png)
+![slice02](images/slice02.png)
 
 长度是切片引用的元素数目。容量是底层数组的元素数目(从切片指针开始)。 关于长度和容量和区域将在下一个例子说明。
 
@@ -160,7 +160,7 @@ s := x[:] // a slice referencing the storage of x
 ```go
 s = s[2:4]
 ```
-![slice03](/images/slice03.png)
+![slice03](images/slice03.png)
 
 切片操作并不复制切片指向的元素。它创建一个新的切片并复用原来切片的底层数组。 这使得切片操作和数组索引一样高效。因此，通过一个新切片修改元素会影响到原始切片的对应元素。
 ```go
@@ -176,7 +176,7 @@ e[1] = 'm'
 s = s[:cap(s)]
 ```
 
-![slice04](/images/slice04.png)
+![slice04](images/slice04.png)
 
 切片增长不能超出其容量。增长超出切片容量将会导致运行时异常，就像切片或数组的索引超 出范围引起异常一样。同样，不能使用小于零的索引去访问切片之前的元素。
 

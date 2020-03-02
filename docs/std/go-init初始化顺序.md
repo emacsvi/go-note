@@ -24,7 +24,7 @@ go-init初始化顺序。
 
 
 
-![init顺序图](/images/init.png)
+![init顺序图](images/init.png)
 
 ### 怎么解决呢？
 

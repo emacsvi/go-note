@@ -108,7 +108,7 @@ func main() {
 
 代码目录如下：
 
-![go.rice in lotus](/images/go.rice.png)
+![go.rice in lotus](images/go.rice.png)
 
 在Makefile里面直接打包，注意目录的路径：
 

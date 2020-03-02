@@ -19,7 +19,7 @@ tags:
 - GOPATH：若干工作区目录的路径。是我们自己定义的工作空间。
 - GOBIN：GO 程序生成的可执行文件（executable file）的路径。
 
-![gopath](/images/gopath.png)
+![gopath](images/gopath.png)
 
 ### 如果gopath之中设置了多个工作区，那么查找依赖包是以怎样的顺序进行的？
 来自[gopath工作区解答](https://cloud.tencent.com/developer/article/1339789)
